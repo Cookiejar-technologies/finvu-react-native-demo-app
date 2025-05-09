@@ -16,7 +16,7 @@ const App = () => {
   const [userId, setUserId] = useState('');
   const [statusMessage, setStatusMessage] = useState('Ready to initialize');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Account linking states
   const [fipsList, setFipsList] = useState<any[]>([]);
   const [selectedFip, setSelectedFip] = useState<string>('');
@@ -24,9 +24,9 @@ const App = () => {
   const [selectedAccounts, setSelectedAccounts] = useState<any[]>([]);
   const [linkingReference, setLinkingReference] = useState('');
   const [linkingOtp, setLinkingOtp] = useState('');
-  
+
   // Consent management states
-  const [consentHandleId, setConsentHandleId] = useState('98eae545-d9b6-49da-80bb-2f3fb79d62a4'); // Example consent handle ID
+  const [consentHandleId, setConsentHandleId] = useState('f459d2f1-3cac-4bfa-909d-bddebdbaa079'); // Example consent handle ID
   const [consentDetails, setConsentDetails] = useState<any>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<any[]>([]);
 
@@ -66,7 +66,7 @@ const App = () => {
       setIsLoading(true);
       setStatusMessage('Initializing...');
       const result = await Finvu.initializeWith(config);
-      
+
       if (result.isSuccess) {
         setStatusMessage(`Initialized: ${result.data}`);
       } else {
@@ -88,7 +88,7 @@ const App = () => {
       setIsLoading(true);
       setStatusMessage('Connecting...');
       const result = await Finvu.connect();
-      
+
       if (result.isSuccess) {
         setStatusMessage('Connected successfully');
         setIsConnected(true);
@@ -111,10 +111,12 @@ const App = () => {
       setIsLoading(true);
       setStatusMessage('Logging in...');
       const result = await Finvu.loginWithUsernameOrMobileNumber(
-        "8459177562@finvu",
-        "8459177562",
+        "8830751044@finvu",
+        "8830751044",
         consentHandleId,
       );
+
+      console.log('Login result:', result);
 
       if (result.isSuccess) {
         if (result.data.reference) {
@@ -140,21 +142,21 @@ const App = () => {
       Alert.alert("Missing OTP", "Please enter the OTP you received");
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setStatusMessage('Verifying OTP...');
       const result = await Finvu.verifyLoginOtp(otp, otpReference);
-      
+
       if (result.isSuccess) {
         if (result.data.userId) {
           setUserId(result.data.userId);
-          setIsLoggedIn(true);
+          setIsLoggedIn((_loginState) => true);
           setStatusMessage(`OTP Verified. User ID: ${result.data.userId}`);
-          
+
           // After successful login, fetch user's consent details
           await fetchConsentDetails();
-          
+
           // Also fetch linked accounts
           await fetchLinkedAccounts();
         }
@@ -182,13 +184,13 @@ const App = () => {
         const fips = result.data.searchOptions || [];
         setFipsList(fips);
         setStatusMessage(`Found ${fips.length} FIPs`);
-        
+
         // Display some FIP info
         if (fips.length > 0) {
           const sampleFips = fips.slice(0, 3);
           const fipNames = sampleFips.map(fip => fip.productName || fip.fipId).join(", ");
           Alert.alert(
-            "FIPs Available", 
+            "FIPs Available",
             `Found ${fips.length} FIPs. Some examples: ${fipNames}...`
           );
         }
@@ -211,7 +213,7 @@ const App = () => {
       Alert.alert("Not Logged In", "Please log in first");
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setStatusMessage(`Discovering accounts at ${fipId}...`);
@@ -226,7 +228,7 @@ const App = () => {
         setDiscoveredAccounts(accounts);
         setSelectedFip(fipId);
         setStatusMessage(`Found ${accounts.length} accounts at ${fipId}`);
-        
+
         if (accounts.length > 0) {
           Alert.alert(
             "Accounts Discovered",
@@ -257,7 +259,7 @@ const App = () => {
     try {
       setIsLoading(true);
       setStatusMessage('Fetching FIP details for linking...');
-      
+
       const fipDetailsResult = await Finvu.fetchFipDetails(fipId);
 
       if (!fipDetailsResult.isSuccess) {
@@ -267,9 +269,9 @@ const App = () => {
       }
 
       setStatusMessage('Linking accounts...');
-      
+
       const linkingResult = await Finvu.linkAccounts(
-        accounts, 
+        accounts,
         fipDetailsResult.data
       );
 
@@ -277,7 +279,7 @@ const App = () => {
         if (linkingResult.data.referenceNumber) {
           setLinkingReference(linkingResult.data.referenceNumber);
           setStatusMessage(`Account linking initiated. Reference: ${linkingResult.data.referenceNumber}`);
-          
+
           Alert.alert(
             "OTP Required",
             "Please enter the OTP sent to your registered mobile number to complete account linking.",
@@ -308,18 +310,18 @@ const App = () => {
       Alert.alert("Missing OTP", "Please enter the OTP you received for account linking");
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setStatusMessage('Confirming account linking...');
-      
+
       const result = await Finvu.confirmAccountLinking(linkingReference, linkingOtp);
-      
+
       if (result.isSuccess) {
         setStatusMessage('Account linking confirmed successfully');
         setLinkingReference('');
         setLinkingOtp('');
-        
+
         // Refresh linked accounts after successful linking
         await fetchLinkedAccounts();
       } else {
@@ -337,11 +339,6 @@ const App = () => {
 
   // Fetch user's linked accounts
   const fetchLinkedAccounts = async () => {
-    if (!isLoggedIn) {
-      Alert.alert("Not Logged In", "Please log in first");
-      return;
-    }
-    
     try {
       setIsLoading(true);
       setStatusMessage('Fetching linked accounts...');
@@ -371,7 +368,7 @@ const App = () => {
       Alert.alert("Missing Consent Handle ID", "Please provide a consent handle ID");
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setStatusMessage('Fetching consent details...');
@@ -400,19 +397,22 @@ const App = () => {
       Alert.alert("Missing Consent Details", "Please fetch consent details first");
       return;
     }
-    
+
     if (!linkedAccounts || linkedAccounts.length === 0) {
       Alert.alert("No Linked Accounts", "Please link accounts first");
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setStatusMessage('Approving consent request...');
-      
+
+      // Convert linkedAccounts to array if it's not already
+      const linkedAccountsArray = Array.isArray(linkedAccounts) ? linkedAccounts : [linkedAccounts];
+
       const result = await Finvu.approveConsentRequest(
         consentDetails,
-        linkedAccounts
+        linkedAccountsArray  // Pass as array
       );
 
       if (result.isSuccess) {
@@ -437,11 +437,11 @@ const App = () => {
       Alert.alert("Missing Consent Details", "Please fetch consent details first");
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setStatusMessage('Denying consent request...');
-      
+
       const result = await Finvu.denyConsentRequest(consentDetails);
 
       if (result.isSuccess) {
@@ -466,7 +466,7 @@ const App = () => {
       setIsLoading(true);
       setStatusMessage('Logging out...');
       const result = await Finvu.logout();
-      
+
       if (result.isSuccess) {
         setIsLoggedIn(false);
         setUserId('');
@@ -496,33 +496,33 @@ const App = () => {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Finvu SDK Demo</Text>
       <Text style={styles.status}>{statusMessage}</Text>
-      
+
       {isLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0000ff" />
         </View>
       )}
-      
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Setup</Text>
         <Button title="Initialize SDK" onPress={handleInitPress} disabled={isLoading} />
         <View style={styles.buttonMargin} />
-        <Button 
-          title={isConnected ? "Connected" : "Connect to Service"} 
+        <Button
+          title={isConnected ? "Connected" : "Connect to Service"}
           onPress={handleConnectPress}
           disabled={isConnected || isLoading}
         />
       </View>
-      
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Authentication</Text>
-        <Button 
-          title="Login" 
+        <Button
+          title="Login"
           onPress={handleLoginPress}
           disabled={!isConnected || isLoggedIn || isLoading}
         />
         <View style={styles.buttonMargin} />
-        
+
         {otpReference && !isLoggedIn && (
           <>
             <TextInput
@@ -533,15 +533,15 @@ const App = () => {
               keyboardType="number-pad"
               editable={!isLoading}
             />
-            
-            <Button 
-              title="Verify OTP" 
+
+            <Button
+              title="Verify OTP"
               onPress={handleVerifyOtp}
               disabled={!otp || isLoading}
             />
           </>
         )}
-        
+
         {isLoggedIn && (
           <>
             <Text style={styles.infoText}>User ID: {userId}</Text>
@@ -550,25 +550,25 @@ const App = () => {
           </>
         )}
       </View>
-      
+
       {isLoggedIn && (
         <>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Financial Institutions</Text>
-            <Button 
-              title="Get All FIPs" 
+            <Button
+              title="Get All FIPs"
               onPress={getFipsList}
               disabled={isLoading}
             />
             <View style={styles.buttonMargin} />
-            
+
             {fipsList.length > 0 && (
               <>
                 <Text style={styles.infoText}>
                   Select a FIP to discover accounts:
                 </Text>
                 <View style={styles.buttonMargin} />
-                
+
                 <ScrollView style={styles.fipList} nestedScrollEnabled={true}>
                   {fipsList.slice(0, 5).map((fip, index) => (
                     <Button
@@ -582,15 +582,15 @@ const App = () => {
               </>
             )}
           </View>
-          
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Account Management</Text>
-            <Button 
-              title="Fetch Linked Accounts" 
+            <Button
+              title="Fetch Linked Accounts"
               onPress={fetchLinkedAccounts}
               disabled={isLoading}
             />
-            
+
             {linkingReference && (
               <>
                 <View style={styles.buttonMargin} />
@@ -605,14 +605,14 @@ const App = () => {
                   keyboardType="number-pad"
                   editable={!isLoading}
                 />
-                <Button 
-                  title="Confirm Account Linking" 
+                <Button
+                  title="Confirm Account Linking"
                   onPress={confirmAccountLinking}
                   disabled={!linkingOtp || isLoading}
                 />
               </>
             )}
-            
+
             {linkedAccounts.length > 0 && (
               <>
                 <View style={styles.buttonMargin} />
@@ -622,7 +622,7 @@ const App = () => {
               </>
             )}
           </View>
-          
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Consent Management</Text>
             <TextInput
@@ -632,12 +632,12 @@ const App = () => {
               placeholder="Enter Consent Handle ID"
               editable={!isLoading}
             />
-            <Button 
-              title="Fetch Consent Details" 
+            <Button
+              title="Fetch Consent Details"
               onPress={fetchConsentDetails}
               disabled={!consentHandleId || isLoading}
             />
-            
+
             {consentDetails && (
               <>
                 <View style={styles.buttonMargin} />
@@ -646,15 +646,15 @@ const App = () => {
                 </Text>
                 <View style={styles.buttonMargin} />
                 <View style={styles.buttonRow}>
-                  <Button 
-                    title="Approve Consent" 
+                  <Button
+                    title="Approve Consent"
                     onPress={approveConsentRequest}
                     disabled={linkedAccounts.length === 0 || isLoading}
                     color="#4CAF50"
                   />
                   <View style={styles.buttonSpacer} />
-                  <Button 
-                    title="Deny Consent" 
+                  <Button
+                    title="Deny Consent"
                     onPress={denyConsentRequest}
                     disabled={isLoading}
                     color="#F44336"
@@ -665,7 +665,7 @@ const App = () => {
           </View>
         </>
       )}
-      
+
       <Text style={styles.note}>Check the console for detailed results</Text>
     </ScrollView>
   );
