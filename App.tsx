@@ -26,7 +26,7 @@ const App = () => {
   const [linkingOtp, setLinkingOtp] = useState('');
 
   // Consent management states
-  const [consentHandleId, setConsentHandleId] = useState('f459d2f1-3cac-4bfa-909d-bddebdbaa079'); // Example consent handle ID
+  const [consentHandleId, setConsentHandleId] = useState('167d98dc-bf6e-43d8-94e5-d4ec49da4916'); // Example consent handle ID
   const [consentDetails, setConsentDetails] = useState<any>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<any[]>([]);
 
@@ -392,42 +392,37 @@ const App = () => {
   };
 
   // Approve a consent request
-  const approveConsentRequest = async () => {
-    if (!consentDetails) {
-      Alert.alert("Missing Consent Details", "Please fetch consent details first");
-      return;
-    }
-
-    if (!linkedAccounts || linkedAccounts.length === 0) {
-      Alert.alert("No Linked Accounts", "Please link accounts first");
-      return;
-    }
-
+  const handleApproveConsent = async () => {
     try {
-      setIsLoading(true);
-      setStatusMessage('Approving consent request...');
+      console.log("Consent Details:", consentDetails);
 
-      // Convert linkedAccounts to array if it's not already
-      const linkedAccountsArray = Array.isArray(linkedAccounts) ? linkedAccounts : [linkedAccounts];
+      // Don't modify the object, but make a deep clone to ensure data structure is preserved
+      // and passed properly to the native side
+      const consentDetailToSend = consentDetails.consentDetail;
+      
+      // Use linkedAccounts directly as they're already in the correct format from fetchLinkedAccounts
+      const accountsToSend = linkedAccounts.length > 0 ? linkedAccounts : selectedAccounts;
+      
+      console.log("Sending consent detail:", consentDetailToSend);
+      console.log("Sending accounts:", accountsToSend);
 
       const result = await Finvu.approveConsentRequest(
-        consentDetails,
-        linkedAccountsArray  // Pass as array
+        consentDetailToSend,
+        accountsToSend
       );
-
+      console.log("Consent Approval result:", result);
       if (result.isSuccess) {
         setStatusMessage('Consent request approved successfully');
         Alert.alert("Success", "Consent request approved successfully");
       } else {
+        console.error("Consent approval failed:", result.error);
         setStatusMessage(`Consent approval failed: ${result.error.message}`);
         Alert.alert("Consent Approval Failed", result.error.message);
       }
     } catch (error) {
-      console.error('Approve consent error:', error);
+      console.error("Error in handleApproveConsent:", error);
       setStatusMessage(`Consent approval failed: ${error}`);
       Alert.alert('Consent Approval Error', String(error));
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -442,7 +437,7 @@ const App = () => {
       setIsLoading(true);
       setStatusMessage('Denying consent request...');
 
-      const result = await Finvu.denyConsentRequest(consentDetails);
+      const result = await Finvu.denyConsentRequest(consentDetails.consentDetail);
 
       if (result.isSuccess) {
         setStatusMessage('Consent request denied successfully');
@@ -642,13 +637,13 @@ const App = () => {
               <>
                 <View style={styles.buttonMargin} />
                 <Text style={styles.infoText}>
-                  Consent Purpose: {consentDetails.purpose || 'N/A'}
+                  Consent Purpose: {consentDetails?.consentDetail?.consentPurpose?.text || 'N/A'}
                 </Text>
                 <View style={styles.buttonMargin} />
                 <View style={styles.buttonRow}>
                   <Button
                     title="Approve Consent"
-                    onPress={approveConsentRequest}
+                    onPress={handleApproveConsent}
                     disabled={linkedAccounts.length === 0 || isLoading}
                     color="#4CAF50"
                   />
@@ -677,7 +672,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: 20, 
   },
   title: {
     fontSize: 24,
