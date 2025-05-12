@@ -1,5 +1,8 @@
 # Finvu Mobile SDK Integration Guide - React Native
 
+## UX AA Sahamati Guidelines
+While developing AA screens, please follow the UX AA guidelines by referring to the [Sahamati Guidelines](https://workdrive.zohopublic.in/external/sheet/e0c838a03871e6258f44ff5b62042f2b89817a37c027e035c01e7d5ed9ce338f)
+
 ## Code Guidelines
 
 ### 1. Avoid Third-Party Imports
@@ -31,7 +34,7 @@ Always call `logout()` and `disconnect()` when the user exits the AA journey, re
     "finvu": "github:Cookiejar-technologies/finvu-expo-module",
 ```
 
-2. Android Configuration (Project-level `build.gradle`):
+2. Android Configuration (Project-level `build.gradle`) in react native mobile app android folder:
 ```gradle
 allprojects {
     repositories {
@@ -49,7 +52,7 @@ allprojects {
 }
 ```
 
-3. Android Configuration (App-level `build.gradle`):
+3. Android Configuration (App-level `build.gradle`) in react native mobile app android folder:
 ```gradle
 android {
     defaultConfig {
@@ -58,7 +61,16 @@ android {
 }
 ```
 
-3. Build & Run React Native app:
+4. ios configuration , add the following in your react native mobile app ios folders/podfile. 
+```
+# Set minimum iOS version
+platform :ios, '16.0'
+
+# Add Finvu SDK dependency
+pod 'FinvuSDK', :git => 'https://github.com/Cookiejar-technologies/finvu_ios_sdk.git', :tag => 'latest_ios_sdk_version'
+```
+
+5. Build & Run React Native app:
 ```
 npm install
 npm run android
@@ -135,6 +147,53 @@ const discoveryResult = await Finvu.discoverAccounts(
         }
     ]
 );
+```
+
+### Identifier Examples
+1. Banks require Mobile Number as a strong type.
+
+```
+[
+    TypeIdentifierInfo(
+        category: "STRONG",
+        type: "MOBILE",
+        value: "930910XXXX"
+    )
+]
+```
+
+2. Investments require same as bank the mobile as first identifier and additional weak PAN as a second identifier.
+
+```
+[
+    TypeIdentifierInfo(
+        category: "STRONG",
+        type: "MOBILE",
+        value: "930910XXXX"
+    ),
+    TypeIdentifierInfo(
+        category: "WEAK",
+        type: "PAN",
+        value: "DFKPGXXXXR"
+    )
+]
+```
+
+3. Insurance require same as bank the mobile as first identifier and additional needs DOB as a second identifier.
+
+```
+[
+    TypeIdentifierInfo(
+        category: "STRONG",
+        type: "MOBILE",
+        value: "930910XXXX"
+    ),
+    TypeIdentifierInfo(
+        category: "ANCILLARY",
+        type: "DOB",
+        value: "yyyy-MM-dd"
+    )
+]
 ```
 
 ## Account Linking
