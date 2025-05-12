@@ -26,7 +26,7 @@ const App = () => {
   const [linkingOtp, setLinkingOtp] = useState('');
 
   // Consent management states
-  const [consentHandleId, setConsentHandleId] = useState('167d98dc-bf6e-43d8-94e5-d4ec49da4916'); // Example consent handle ID
+  const [consentHandleId, setConsentHandleId] = useState('consent_handle_id_generated'); // Example consent handle ID
   const [consentDetails, setConsentDetails] = useState<any>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<any[]>([]);
 
@@ -111,8 +111,8 @@ const App = () => {
       setIsLoading(true);
       setStatusMessage('Logging in...');
       const result = await Finvu.loginWithUsernameOrMobileNumber(
-        "8830751044@finvu",
-        "8830751044",
+        "username",
+        "mobile_number",
         consentHandleId,
       );
 
