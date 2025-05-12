@@ -30,6 +30,7 @@ Always call `logout()` and `disconnect()` when the user exits the AA journey, re
 
 ## Installation
 1. Install the SDK:
+In your app's package.json add the below dependency.
 ```bash
     "finvu": "github:Cookiejar-technologies/finvu-expo-module",
 ```
