@@ -70,6 +70,7 @@ platform :ios, '16.0'
 # Add Finvu SDK dependency
 pod 'FinvuSDK', :git => 'https://github.com/Cookiejar-technologies/finvu_ios_sdk.git', :tag => 'latest_ios_sdk_version'
 ```
+Note : current latest version is 1.0.3
 
 5. Build & Run React Native app:
 ```
