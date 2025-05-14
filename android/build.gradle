@@ -30,8 +30,8 @@ allprojects {
     maven { 
           url 'https://maven.pkg.github.com/Cookiejar-technologies/finvu_android_sdk' 
           credentials {
-              username = System.getenv("GITHUB_PACKAGE_USERNAME")
-              password = System.getenv("GITHUB_PACKAGE_TOKEN")
+              username = "username"
+              password = "pat"
           }
       }
 
