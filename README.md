@@ -1,272 +1,147 @@
-# Finvu Mobile SDK Integration Guide - React Native
+# Finvu react native Demo App
 
-## UX AA Sahamati Guidelines
-While developing AA screens, please follow the UX AA guidelines by referring to the [Sahamati Guidelines](https://workdrive.zohopublic.in/external/sheet/e0c838a03871e6258f44ff5b62042f2b89817a37c027e035c01e7d5ed9ce338f)
+This demo application showcases the implementation and flows of the Finvu react-native SDK. It demonstrates account discovery, linking, and consent management functionalities.
 
-## Code Guidelines
+## Getting Started
 
-### 1. Avoid Third-Party Imports
-In the AA journey screens, ensure that only AA flow-related code is present. No third-party API requests unrelated to the AA journey.
+1. **Clone the Repository**: 
+   ```bash
+   git clone https://github.com/Cookiejar-technologies/finvu-react-native-demo-app
+   cd finvu-react-native-demo-app
+   ```
 
-### 2. Do Not Store Data in Device Local Storage
-Avoid storing data in local storage mechanisms like AsyncStorage or local databases.
+2. **Install Dependencies**: 
+   ```bash
+   npm install or yarn install
+   ```
 
-### 3. Clean Data and Instances
-Ensure all data is cleaned up when the AA journey ends, including closing states and clearing objects.
-
-### 4. Avoid Redundant Calls
-Minimize repeated calls to SDK methods to optimize performance and reduce unnecessary network requests.
-
-### 5. Logout and Disconnect
-Always call `logout()` and `disconnect()` when the user exits the AA journey, regardless of the outcome.
-
-## Latest SDK Version
-- React Native SDK: v1.0.3
-
-## Prerequisites
-- Minimum Android SDK version: 24
-- Minimum iOS version: 16
-- React Native version: Compatible with latest version
-
-## Installation
-1. Install the SDK:
-In your app's package.json add the below dependency.
-```bash
-    "finvu": "github:Cookiejar-technologies/finvu-expo-module",
-```
-
-2. Android Configuration (Project-level `build.gradle`) in react native mobile app android folder:
-```gradle
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        
-        maven { 
-            url 'https://maven.pkg.github.com/Cookiejar-technologies/finvu_android_sdk' 
-            credentials {
-                username = System.getenv("GITHUB_PACKAGE_USERNAME")
-                password = System.getenv("GITHUB_PACKAGE_TOKEN")
-            }
-        }
+3. **Add the username and personal access token of you githu account**: 
+   ```gradle
+    // Inside finvu-react-native-demo-app/android/build.gradle update the below details 
+    maven { 
+          url 'https://maven.pkg.github.com/Cookiejar-technologies/finvu_android_sdk' 
+          credentials {
+              username = "username"
+              password = "pat"
+          }
     }
-}
+   ```
+
+4 **Follow the Sequential Flows**: 
+   Navigate through the application from login to consent management.
+
+## Key Flows
+
+### 1. Authentication Flow
+- Initial login screen where user enters:
+    - Username
+    - Mobile number
+    - Consent Handle ID
+- OTP verification
+- On successful verification, user is redirected to main dashboard
+
+### 2. Main Dashboard Flow
+- Displays list of linked accounts
+- Provides options to:
+    - Add new account
+    - Process consent
+- Fetches and displays all linked accounts in a recycler view
+
+### 3. Account Discovery & Linking Flow
+1. Popular Search
+    - Displays list of available FIPs (Financial Information Providers)
+    - User selects a FIP to proceed
+
+2. Account Discovery
+    - User enters mobile number (mandatory)
+    - Optional PAN number input
+    - Fetches available accounts from selected FIP
+    - Shows both unlinked and already linked accounts
+    - Allows selection of multiple accounts for linking
+
+3. Account Linking Confirmation
+    - OTP verification for selected accounts
+    - On successful verification, accounts are linked
+    - Redirects back to main dashboard
+
+### 4. Consent Management Flow
+
+#### Pre-defined Consent Handle IDs
+For demonstration purposes, the app uses predefined consent handle ID:
+
+```ts
+   // inside finvu-react-native-demo-app/src/context/FinvuContext.tsx update the below details
+   const [mobileNumber, setMobileNumber] = useState('mobile_number');
+   const [userHandle, setUserHandle] = useState('user_handle');
+   const [consentHandleId, setConsentHandleId] = useState('consent_handle');
 ```
 
-3. Android Configuration (App-level `build.gradle`) in react native mobile app android folder:
-```gradle
-android {
-    defaultConfig {
-        minSdkVersion 24
-    }
-}
-```
+#### A. Consent Details Display
+- Shows comprehensive consent information:
+    - Purpose
+    - Data fetch frequency
+    - Data usage period
+    - Date ranges
+    - Account types requested
 
-4. ios configuration , add the following in your react native mobile app ios folders/podfile. 
-```
-# Set minimum iOS version
-platform :ios, '16.0'
+#### B. Account Selection
+- Lists linked accounts
+- Allows selection of accounts for consent
 
-# Add Finvu SDK dependency
-pod 'FinvuSDK', :git => 'https://github.com/Cookiejar-technologies/finvu_ios_sdk.git', :tag => 'latest_ios_sdk_version'
-```
-Note : current latest version is 1.0.3
+#### C. Consent Actions
+1. **Multi Consent Flow**
+    - Uses a single consent handle ID (index 0) for all selected accounts.
+    - Processes all accounts in one API call.
+    - Simpler implementation for basic use cases.
+    - Example implementation:
+    ```swift
+      const handleApproveConsent = async () => {
+            try {
+                const result = await Finvu.approveConsentRequest(
+                    consentDetailToSend,
+                    accountsToSend
+                );
+                console.log("Consent Approval result:", result);
+                if (result.isSuccess) {
+                    setStatusMessage('Consent request approved successfully');
+                    Alert.alert("Success", "Consent request approved successfully");
+                } else {
+                    console.error("Consent approval failed:", result.error);
+                    setStatusMessage(`Consent approval failed: ${result.error.message}`);
+                    Alert.alert("Consent Approval Failed", result.error.message);
+                }
+            } catch (error) {
+                console.error("Error in handleApproveConsent:", error);
+                setStatusMessage(`Consent approval failed: ${error}`);
+                Alert.alert('Consent Approval Error', String(error));
+            } 
+    };
+    ```
 
-5. Build & Run React Native app:
-```
-npm install
-npm run android
-```
+2. **Reject Consent**
+    - Denies the consent request using the first consent handle ID.
+    - Cancels the entire consent process.
 
+#### Important Implementation Notes
+##### Consent Handle ID Management:
 
-## SDK Initialization and Connection Management
-```typescript
-import * as Finvu from 'finvu';
+    - Demo uses predefined IDs for simplicity
+    - In production, generate new consent handle IDs for each selected account
+    - Number of selected accounts must match available consent handle IDs
 
-// Initialize SDK
-const config = {
-    finvuEndpoint: "wss://wsslive.finvu.in/consentapi",
-    certificatePins: [
-        "TmZriS3UEzT3t5s8SJATgFdUH/llYL8vieP2wOuBAB8=",
-        "aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890+/="
-    ] // optional
-};
+## Dependencies
 
-// Initialize
-const initResult = await Finvu.initializeWith(config);
-
-// Connect to service
-const connectResult = await Finvu.connect();
-```
-
-## Authentication
-
-### Login with Consent Handle
-```typescript
-const loginResult = await Finvu.loginWithUsernameOrMobileNumber(
-    consentHandleId: "CONSENT_HANDLE_ID",
-    username: "USER_HANDLE",
-    mobileNumber: "MOBILE_NUMBER"
-);
-
-// Verify OTP
-const verifyResult = await Finvu.verifyLoginOtp(
-    otp: "111111",
-    otpReference: loginResult.data.reference
-);
-
-// Logout
-const logoutResult = await Finvu.logout();
-```
-
-## FIP Management
-
-### Fetch FIP Options
-```typescript
-const fipsResult = await Finvu.fipsAllFIPOptions();
-
-// Fetch specific FIP details
-const fipDetailsResult = await Finvu.fetchFipDetails("FIP_ID");
-```
-
-## Account Discovery
-
-### Discover Accounts
-```typescript
-const discoveryResult = await Finvu.discoverAccounts(
-    fipId: "FIP_ID",
-    fiTypes: ["DEPOSIT", "RECURRING_DEPOSIT"],
-    identifiers: [
-        {
-            category: "STRONG",
-            type: "MOBILE",
-            value: "930910XXXX"
+The app uses the following Finu react native module:
+-  ```
+        "dependencies": {
+            ... other dependencies,
+            "finvu-react-native-sdk": "github:Cookiejar-technologies/finvu-react-native-sdk#0.1.0",
+            ... other dependencies,
         },
-        {
-            category: "WEAK",
-            type: "PAN",
-            value: "DFKPGXXXXR"
-        }
-    ]
-);
-```
+   ```
 
-### Identifier Examples
-1. Banks require Mobile Number as a strong type.
+## Production Considerations
+1. Replace hardcoded consent handle ID with dynamically generated ones.
+2. Implement proper validation for consent expiry and other parameters.
 
-```
-[
-    TypeIdentifierInfo(
-        category: "STRONG",
-        type: "MOBILE",
-        value: "930910XXXX"
-    )
-]
-```
-
-2. Investments require same as bank the mobile as first identifier and additional weak PAN as a second identifier.
-
-```
-[
-    TypeIdentifierInfo(
-        category: "STRONG",
-        type: "MOBILE",
-        value: "930910XXXX"
-    ),
-    TypeIdentifierInfo(
-        category: "WEAK",
-        type: "PAN",
-        value: "DFKPGXXXXR"
-    )
-]
-```
-
-3. Insurance require same as bank the mobile as first identifier and additional needs DOB as a second identifier.
-
-```
-[
-    TypeIdentifierInfo(
-        category: "STRONG",
-        type: "MOBILE",
-        value: "930910XXXX"
-    ),
-    TypeIdentifierInfo(
-        category: "ANCILLARY",
-        type: "DOB",
-        value: "yyyy-MM-dd"
-    )
-]
-```
-
-## Account Linking
-
-### Link Accounts
-```typescript
-// Initiate account linking
-const linkingResult = await Finvu.linkAccounts(
-    accounts: selectedAccounts,
-    fipDetails: fipDetails
-);
-
-// Confirm linking with OTP
-const confirmLinkingResult = await Finvu.confirmAccountLinking(
-    referenceNumber: linkingResult.data.referenceNumber,
-    otp: "123456"
-);
-
-// Fetch linked accounts
-const linkedAccountsResult = await Finvu.fetchLinkedAccounts();
-```
-
-## Consent Management
-
-### Manage Consent
-```typescript
-// Get consent details
-const consentDetailsResult = await Finvu.getConsentRequestDetails(handleId);
-
-// Approve consent
-const approveResult = await Finvu.approveConsentRequest(
-    consentDetails: consentRequestDetailInfo,
-    linkedAccounts: selectedAccounts
-);
-
-// Deny consent
-const denyResult = await Finvu.denyConsentRequest(consentRequestDetailInfo);
-```
-
-## SDK Error Codes
-
-| Code | Description |
-|------|-------------|
-| 1001 | AUTH_LOGIN_RETRY |
-| 1002 | AUTH_LOGIN_FAILED |
-| 8000 | SESSION_DISCONNECTED |
-| 9999 | GENERIC_ERROR |
-
-## Frequently Asked Questions
-
-### GitHub Authentication
-Set up GitHub Personal Access Token (PAT) with package read permissions:
-```
-GITHUB_PACKAGE_USERNAME=your_github_username
-GITHUB_PACKAGE_TOKEN=your_github_pat
-```
-
-### Handling Errors
-```typescript
-try {
-    const result = await Finvu.someMethod();
-    if (result.isSuccess) {
-        // Process successful result
-    } else {
-        // Handle specific error
-        console.error(result.error.code, result.error.message);
-    }
-} catch (error) {
-    // Handle unexpected errors
-}
-```
-
-## Support
-For further assistance, contact Finvu support or refer to the detailed documentation.
+**Note**: This is a demo application intended to showcase the Finvu react native SDK implementation. For production use, please refer to the official documentation and implement appropriate security measures.

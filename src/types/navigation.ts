@@ -1,7 +1,7 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as Finvu from 'finvu';
+import * as Finvu from 'finvu-react-native-sdk';
 import { ROUTES } from "../constants/routes";
-import { LinkedAccountDetails } from 'finvu';
+import { LinkedAccountDetails } from 'finvu-react-native-sdk';
 import { RouteProp } from '@react-navigation/native';
 
 export type RootStackParamList = {

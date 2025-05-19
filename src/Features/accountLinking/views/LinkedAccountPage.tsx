@@ -1,8 +1,8 @@
-import * as Finvu from 'finvu';
+import * as Finvu from 'finvu-react-native-sdk';
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, ActivityIndicator, Alert, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { LinkedAccountDetails } from 'finvu';
+import { LinkedAccountDetails } from 'finvu-react-native-sdk';
 import { ROUTES } from '../../../constants/routes';
 import { LinkedAccountsPageNavigationProp } from '../../../types/navigation';
 import { styles } from '../../../styles/sharedStyles';

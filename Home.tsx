@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Button, TextInput, Text, Alert, ScrollView, ActivityIndicator, FlatList } from 'react-native';
-import * as Finvu from 'finvu';
+import * as Finvu from 'finvu-react-native-sdk';
 import { AccountLinking } from './src/utils/accountLinkingUtils';
 import { useFinvu } from './src/context/FinvuContext';
 import { styles } from './src/styles/sharedStyles';
@@ -87,6 +87,9 @@ const Home = () => {
 
       if (result.isSuccess) {
         setStatusMessage('Connected successfully');
+        const isConnectedResult = await Finvu.isConnected();
+        const hasSessionResult = await Finvu.hasSession();
+        console.log('new method result', 'isConnnected : ', isConnectedResult, 'hasSession : ', hasSessionResult)
         setIsConnected(true);
       } else {
         setStatusMessage(`Connection failed: ${result.error.message}`);
@@ -101,6 +104,32 @@ const Home = () => {
     }
   };
 
+  // Connect to service
+  const handleDisconnectPress = async () => {
+    try {
+      setIsLoading(true);
+      setStatusMessage('Connecting...');
+      const result = await Finvu.disconnect();
+
+      if (result.isSuccess) {
+        const isConnectedResult = await Finvu.isConnected();
+        const hasSessionResult = await Finvu.hasSession();
+        console.log('new method result', 'isConnnected : ', isConnectedResult, 'hasSession : ', hasSessionResult)
+        setStatusMessage('Disconnected successfully');
+        setIsConnected(false);
+      } else {
+        setStatusMessage(`Failed to Disconnect: ${result.error.message}`);
+        Alert.alert('`Failed to Disconnect', result.error.message);
+      }
+    } catch (error) {
+      console.error('Connection error:', error);
+      setStatusMessage(`Connection failed: ${error}`);
+      Alert.alert('Connection Error', String(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+    
   // Login with username or mobile
   const handleLoginPress = async () => {
     try {
@@ -255,6 +284,8 @@ const Home = () => {
       console.error("Error in handleApproveConsent:", error);
       setStatusMessage(`Consent approval failed: ${error}`);
       Alert.alert('Consent Approval Error', String(error));
+    } finally {
+       setTimeout(() => handleLogout(),2000) 
     }
   };
 
@@ -284,6 +315,7 @@ const Home = () => {
       Alert.alert('Consent Denial Error', String(error));
     } finally {
       setIsLoading(false);
+      setTimeout(() => handleLogout(),2000)
     }
   };
 
@@ -336,6 +368,12 @@ const Home = () => {
           onPress={handleConnectPress}
           disabled={isConnected || isLoading}
         />
+        <View style={styles.buttonMargin} />
+        {!isLoggedIn && <Button
+          title={!isConnected ? "Disconnected" : "Disconnect from Service"}
+          onPress={handleDisconnectPress}
+          disabled={!isConnected || isLoading}
+        />}
       </View>
 
       <View style={styles.section}>
