@@ -85,13 +85,13 @@ android {
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
+    compileSdk 35
 
     namespace 'com.anonymous.finvureactexpodemoapp'
     defaultConfig {
         applicationId 'com.anonymous.finvureactexpodemoapp'
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion 25
+        targetSdkVersion  35
         versionCode 1
         versionName "1.0.0"
     }
@@ -150,6 +150,9 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    // uncomment this line if you want to use the SNA adapter for sna login
+    // implementation("com.finvu.android:sna-adapter:1.0.1")
+
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

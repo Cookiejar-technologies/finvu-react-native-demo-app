@@ -13,7 +13,7 @@ install! 'cocoapods',
 
 prepare_react_native_project!
 
-target 'finvureactexpodemoapp' do
+target 'finvureactnativeexpodemoapp' do
   use_expo_modules!
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
@@ -33,6 +33,12 @@ target 'finvureactexpodemoapp' do
 
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
   use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
+  # Podfile configuration
+  platform :ios, '16.0'
+
+  
+  pod 'FinvuSDK' , :git => 'https://github.com/Cookiejar-technologies/finvu_ios_sdk.git', :tag => '1.0.7'
+  pod 'FinvuSDKSNAAdapter', :git => 'https://github.com/Cookiejar-technologies/finvu-ios-sdk-sna-adapter.git', :tag => '1.0.0'
 
   use_react_native!(
     :path => config[:reactNativePath],
@@ -41,8 +47,6 @@ target 'finvureactexpodemoapp' do
     :app_path => "#{Pod::Config.instance.installation_root}/..",
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
-
-  pod 'FinvuSDK' , :git => 'https://github.com/Cookiejar-technologies/finvu_ios_sdk.git', :tag => '1.0.3'
 
   post_install do |installer|
     react_native_post_install(

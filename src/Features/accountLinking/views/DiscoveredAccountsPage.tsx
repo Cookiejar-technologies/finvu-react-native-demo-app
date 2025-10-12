@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as Finvu from 'finvu-react-native-sdk';
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
 import { View, Text, FlatList, TouchableOpacity, Button, Alert } from 'react-native';
 import { styles } from '../../../styles/sharedStyles';
 import { CommonActions, RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { DiscoverAccountsPageNavigationProp, DiscoveredAccountsPageRouteProp } f
 import { InputDialogResolver } from '../../../types/accountLinkingTypes';
 import OtpInputDialog from '../components/OtpInputDialog';
 import { ROUTES } from '../../../constants/routes';
+import { useFinvu } from '../../../context/FinvuContext';
 
 
 const DiscoveredAccountsPage: React.FC = () => {
@@ -20,6 +21,7 @@ const DiscoveredAccountsPage: React.FC = () => {
     const [linkingReference, setLinkingReference] = useState('');
     const [showOtpDialog, setShowOtpInputDialog] = useState<boolean>(false)
     const otpResolver = useRef<InputDialogResolver>(null);
+    const { consentHandleId, mobileNumber, userHandle } = useFinvu();
 
     useEffect(() => {
         if (linkingReference) {
@@ -92,6 +94,31 @@ const DiscoveredAccountsPage: React.FC = () => {
         try {
             setIsLoading(true);
             setStatusMessage('Confirming account linking...');
+
+            const connectedResult  = await Finvu.isConnected();
+            const hasSession = await Finvu.hasSession();
+            console.log('isConnected:', connectedResult, 'hasSession:', hasSession);
+            // if (connectedResult.isSuccess && !connectedResult.data ) {
+            //     console.log('connecting...');
+            //     const connectResult = await Finvu.connect();
+            //     console.log('connectResult:', connectResult);
+
+            //     // wait 2 seconds
+            //     await new Promise(resolve => setTimeout(resolve, 500));
+
+
+            //     // const loginResult = await Finvu.loginWithUsernameOrMobileNumber(userHandle, mobileNumber, consentHandleId);
+            //     // if (loginResult.isSuccess && loginResult.data.reference) {
+            //     //     const verifyResult = await Finvu.verifyLoginOtp("111111", loginResult.data.reference);
+            //     // }
+
+            //     // await new Promise(resolve => setTimeout(resolve, 1000));
+
+            //     const isConnected = await Finvu.isConnected();
+            //     const hasSession = await Finvu.hasSession();
+            //     console.log('upon reconnection : isConnected:', isConnected, 'hasSession:', hasSession);
+
+            // }
 
             const result = await Finvu.confirmAccountLinking(linkingReference, otp);
 

@@ -16,8 +16,8 @@ const OtpInputDialog: React.FC<OtpInputDialogProps> = ({ visible, onClose, onSub
     const [error, setError] = useState('');
 
     const validate = () => {
-        if (!/^\d{6}$/.test(otp)) {
-            setError('OTP must be 6 digits');
+        if (!/^\d{6,8}$/.test(otp)) {
+            setError('OTP must be between 6 and 8 digits');
             return false;
         }
         setError('');
@@ -26,6 +26,7 @@ const OtpInputDialog: React.FC<OtpInputDialogProps> = ({ visible, onClose, onSub
 
     const handleSubmit = () => {
         if (validate()) {
+            console.log('otp', otp);
             onSubmit(otp);
             onClose();
         }
@@ -36,7 +37,7 @@ const OtpInputDialog: React.FC<OtpInputDialogProps> = ({ visible, onClose, onSub
             <TextInput
                 style={styles.input}
                 keyboardType="numeric"
-                maxLength={6}
+                maxLength={8}
                 value={otp}
                 onChangeText={setOtp}
                 placeholder="123456"
