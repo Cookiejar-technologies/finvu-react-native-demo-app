@@ -1,17 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Button, TextInput, Text, Alert, ScrollView, ActivityIndicator, FlatList } from 'react-native';
-import * as Finvu from 'finvu-react-native-sdk';
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
 import { AccountLinking } from './src/utils/accountLinkingUtils';
 import { useFinvu } from './src/context/FinvuContext';
 import { styles } from './src/styles/sharedStyles';
 import { useNavigation } from '@react-navigation/native';
 import { HomePageNavigationProp, LinkedAccountsPageNavigationProp } from './src/types/navigation';
 import { ROUTES } from './src/constants/routes';
-
-export interface FinvuConfig {
-  finvuEndpoint: string;
-  certificatePins?: string[];
-}
 
 const Home = () => {
 
@@ -26,9 +21,12 @@ const Home = () => {
   const [consentDetails, setConsentDetails] = useState<any>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<any[]>([]);
 
-  const config: FinvuConfig = {
-    finvuEndpoint: 'wss://webvwdev.finvu.in/consentapi',
+  const config: Finvu.FinvuConfig = {
+    finvuEndpoint: 'wss://webvwdev.finvu.in/consentapiv2',
     certificatePins: [],
+    finvuAuthSNAConfig: {
+      environment: Finvu.FinvuEnviornment.UAT,
+    }
   };
 
   useEffect(() => {
@@ -36,6 +34,8 @@ const Home = () => {
     const connectionStatusSubscription = Finvu.addConnectionStatusChangeListener((event) => {
       setStatusMessage(`Connection status: ${event.status}`);
       setIsConnected(event.status === 'Connected successfully');
+      console.log('Connection status changed:', event);
+
     });
 
     const loginOtpReceivedSubscription = Finvu.addLoginOtpReceivedListener((event) => {
@@ -129,7 +129,7 @@ const Home = () => {
       setIsLoading(false);
     }
   };
-    
+
   // Login with username or mobile
   const handleLoginPress = async () => {
     try {
@@ -144,13 +144,84 @@ const Home = () => {
       console.log('Login result:', result);
 
       if (result.isSuccess) {
-        if (result.data.reference) {
-          setOtpReference(result.data.reference);
-          setStatusMessage(`Login initiated. OTP sent. Reference: ${result.data.reference}`);
+        const { reference, authType, snaToken } = result.data;
+
+        if (reference) {
+          setOtpReference(reference);
+
+          // Check if it's SNA authentication with token
+          if (authType === 'SNA' && snaToken && snaToken.trim() !== '') {
+            console.log('SNA Authentication successful, auto-verifying with token');
+            setStatusMessage('SNA Authentication - Auto-verifying...');
+
+            // Auto-verify with SNA token
+            setOtp(snaToken);
+
+            // Automatically verify the SNA token
+            const verifyResult = await Finvu.verifyLoginOtp(snaToken, reference);
+
+            if (verifyResult.isSuccess) {
+              if (verifyResult.data.userId) {
+                setUserId(verifyResult.data.userId);
+                setIsLoggedIn(true);
+                setStatusMessage(`SNA Authentication successful. User ID: ${verifyResult.data.userId}`);
+
+                // After successful login, fetch user's consent details
+                await fetchConsentDetails();
+
+                // Also fetch linked accounts
+                await fetchLinkedAccounts();
+              }
+            } else {
+              setStatusMessage(`SNA verification failed: ${verifyResult.error.message}`);
+              Alert.alert("SNA Verification Failed", verifyResult.error.message);
+            }
+          } else {
+            // Regular OTP mode
+            if(authType == "SNA"){
+              const retryResult = await Finvu.loginWithUsernameOrMobileNumber(
+                userHandle,
+                mobileNumber,
+                consentHandleId,
+              );
+
+              if (retryResult.isSuccess && retryResult.data.reference) {
+                setOtpReference(retryResult.data.reference);
+                setStatusMessage(`Login retry successful. OTP sent. Reference: ${retryResult.data.reference}`);
+              } else {
+                setStatusMessage(`Login retry failed: ${retryResult?.error?.message || 'Unknown error'}`);
+                Alert.alert("Login Failed", retryResult.error?.message || 'Login retry failed');
+              }
+            }
+            console.log('OTP mode - showing OTP field');
+            setStatusMessage(`Login initiated. OTP sent. Reference: ${reference}`);
+          }
         }
       } else {
-        setStatusMessage(`Login failed: ${result.error.message}`);
-        Alert.alert("Login Failed", result.error.message);
+        // Check for error code 1002 (SNA auth failed) and retry once
+        if (result.error.code === 'AUTH_LOGIN_FAILED' || result.error.code === '1002') {
+          console.log('SNA failed, retrying login once...');
+          setStatusMessage('SNA authentication failed, retrying with OTP...');
+
+          {// Retry the login
+            const retryResult = await Finvu.loginWithUsernameOrMobileNumber(
+              userHandle,
+              mobileNumber,
+              consentHandleId,
+            );
+
+            if (retryResult.isSuccess && retryResult.data.reference) {
+              setOtpReference(retryResult.data.reference);
+              setStatusMessage(`Login retry successful. OTP sent. Reference: ${retryResult.data.reference}`);
+            } else {
+              setStatusMessage(`Login retry failed: ${retryResult?.error?.message || 'Unknown error'}`);
+              Alert.alert("Login Failed", retryResult.error?.message || 'Login retry failed');
+            }
+          }
+        } else {
+          setStatusMessage(`Login failed: ${result.error.message}`);
+          Alert.alert("Login Failed", result.error.message);
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -170,7 +241,18 @@ const Home = () => {
 
     try {
       setIsLoading(true);
+
+      const isConnectedResult = await Finvu.isConnected();
+      const hasSessionResult = await Finvu.hasSession();
+      console.log('new method result', 'isConnnected : ', isConnectedResult, 'hasSession : ', hasSessionResult)
       setStatusMessage('Verifying OTP...');
+      try {
+        await Finvu.connect();
+      } catch (error) {
+        console.error('Connection error:', error);
+        setStatusMessage(`Connection failed: ${error}`);
+        Alert.alert('Connection Error', String(error));
+      }
       const result = await Finvu.verifyLoginOtp(otp, otpReference);
 
       if (result.isSuccess) {
@@ -285,7 +367,7 @@ const Home = () => {
       setStatusMessage(`Consent approval failed: ${error}`);
       Alert.alert('Consent Approval Error', String(error));
     } finally {
-       setTimeout(() => handleLogout(),2000) 
+      setTimeout(() => handleLogout(), 2000)
     }
   };
 
@@ -315,7 +397,7 @@ const Home = () => {
       Alert.alert('Consent Denial Error', String(error));
     } finally {
       setIsLoading(false);
-      setTimeout(() => handleLogout(),2000)
+      setTimeout(() => handleLogout(), 2000)
     }
   };
 

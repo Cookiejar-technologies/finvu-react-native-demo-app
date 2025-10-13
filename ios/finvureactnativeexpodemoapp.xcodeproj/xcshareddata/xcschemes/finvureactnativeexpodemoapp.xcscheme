@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "finvureactexpodemoapp.app"
-               BlueprintName = "finvureactexpodemoapp"
-               ReferencedContainer = "container:finvureactexpodemoapp.xcodeproj">
+               BuildableName = "finvureactnativeexpodemoapp.app"
+               BlueprintName = "finvureactnativeexpodemoapp"
+               ReferencedContainer = "container:finvureactnativeexpodemoapp.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "finvureactexpodemoappTests.xctest"
-               BlueprintName = "finvureactexpodemoappTests"
-               ReferencedContainer = "container:finvureactexpodemoapp.xcodeproj">
+               BuildableName = "finvureactnativeexpodemoappTests.xctest"
+               BlueprintName = "finvureactnativeexpodemoappTests"
+               ReferencedContainer = "container:finvureactnativeexpodemoapp.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "finvureactexpodemoapp.app"
-            BlueprintName = "finvureactexpodemoapp"
-            ReferencedContainer = "container:finvureactexpodemoapp.xcodeproj">
+            BuildableName = "finvureactnativeexpodemoapp.app"
+            BlueprintName = "finvureactnativeexpodemoapp"
+            ReferencedContainer = "container:finvureactnativeexpodemoapp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "finvureactexpodemoapp.app"
-            BlueprintName = "finvureactexpodemoapp"
-            ReferencedContainer = "container:finvureactexpodemoapp.xcodeproj">
+            BuildableName = "finvureactnativeexpodemoapp.app"
+            BlueprintName = "finvureactnativeexpodemoapp"
+            ReferencedContainer = "container:finvureactnativeexpodemoapp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

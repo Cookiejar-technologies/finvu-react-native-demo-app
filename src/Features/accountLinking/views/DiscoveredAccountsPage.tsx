@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as Finvu from 'finvu-react-native-sdk';
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
 import { View, Text, FlatList, TouchableOpacity, Button, Alert } from 'react-native';
 import { styles } from '../../../styles/sharedStyles';
 import { CommonActions, RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { DiscoverAccountsPageNavigationProp, DiscoveredAccountsPageRouteProp } f
 import { InputDialogResolver } from '../../../types/accountLinkingTypes';
 import OtpInputDialog from '../components/OtpInputDialog';
 import { ROUTES } from '../../../constants/routes';
+import { useFinvu } from '../../../context/FinvuContext';
 
 
 const DiscoveredAccountsPage: React.FC = () => {
@@ -20,6 +21,7 @@ const DiscoveredAccountsPage: React.FC = () => {
     const [linkingReference, setLinkingReference] = useState('');
     const [showOtpDialog, setShowOtpInputDialog] = useState<boolean>(false)
     const otpResolver = useRef<InputDialogResolver>(null);
+    const { consentHandleId, mobileNumber, userHandle } = useFinvu();
 
     useEffect(() => {
         if (linkingReference) {
@@ -92,6 +94,10 @@ const DiscoveredAccountsPage: React.FC = () => {
         try {
             setIsLoading(true);
             setStatusMessage('Confirming account linking...');
+
+            const connectedResult  = await Finvu.isConnected();
+            const hasSession = await Finvu.hasSession();
+            console.log('isConnected:', connectedResult, 'hasSession:', hasSession);
 
             const result = await Finvu.confirmAccountLinking(linkingReference, otp);
 
