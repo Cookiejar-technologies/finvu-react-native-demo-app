@@ -98,27 +98,6 @@ const DiscoveredAccountsPage: React.FC = () => {
             const connectedResult  = await Finvu.isConnected();
             const hasSession = await Finvu.hasSession();
             console.log('isConnected:', connectedResult, 'hasSession:', hasSession);
-            // if (connectedResult.isSuccess && !connectedResult.data ) {
-            //     console.log('connecting...');
-            //     const connectResult = await Finvu.connect();
-            //     console.log('connectResult:', connectResult);
-
-            //     // wait 2 seconds
-            //     await new Promise(resolve => setTimeout(resolve, 500));
-
-
-            //     // const loginResult = await Finvu.loginWithUsernameOrMobileNumber(userHandle, mobileNumber, consentHandleId);
-            //     // if (loginResult.isSuccess && loginResult.data.reference) {
-            //     //     const verifyResult = await Finvu.verifyLoginOtp("111111", loginResult.data.reference);
-            //     // }
-
-            //     // await new Promise(resolve => setTimeout(resolve, 1000));
-
-            //     const isConnected = await Finvu.isConnected();
-            //     const hasSession = await Finvu.hasSession();
-            //     console.log('upon reconnection : isConnected:', isConnected, 'hasSession:', hasSession);
-
-            // }
 
             const result = await Finvu.confirmAccountLinking(linkingReference, otp);
 
