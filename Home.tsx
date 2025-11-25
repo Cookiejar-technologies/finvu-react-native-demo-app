@@ -7,6 +7,7 @@ import { styles } from './src/styles/sharedStyles';
 import { useNavigation } from '@react-navigation/native';
 import { HomePageNavigationProp, LinkedAccountsPageNavigationProp } from './src/types/navigation';
 import { ROUTES } from './src/constants/routes';
+import { EventsDisplay, FinvuEvent } from './src/components/EventsDisplay';
 
 const Home = () => {
 
@@ -20,51 +21,163 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [consentDetails, setConsentDetails] = useState<any>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<any[]>([]);
+  const [events, setEvents] = useState<FinvuEvent[]>([]);
 
   const config: Finvu.FinvuConfig = {
     finvuEndpoint: 'wss://webvwdev.finvu.in/consentapiv2',
     certificatePins: [],
-    finvuAuthSNAConfig: {
+    finvuAuthSNAConfig : {
       environment: Finvu.FinvuEnviornment.UAT,
     }
   };
 
   useEffect(() => {
-    // Set up event listeners
-    const connectionStatusSubscription = Finvu.addConnectionStatusChangeListener((event) => {
-      setStatusMessage(`Connection status: ${event.status}`);
-      setIsConnected(event.status === 'Connected successfully');
-      console.log('Connection status changed:', event);
+    // Enable event tracking early (required!)
+    // This ensures events are captured from the start
+    if (Finvu.setEventsEnabled) {
+      const enableResult = Finvu.setEventsEnabled(true);
+      if (enableResult?.isSuccess) {
+        console.log('✅ Event tracking enabled (on mount)');
+      } else {
+        console.warn('⚠️ Event tracking enable result:', enableResult);
+      }
+    }
 
-    });
+    // Register custom events (optional)
+    if (Finvu.registerCustomEvents) {
+      Finvu.registerCustomEvents({
+        'USER_BUTTON_CLICKED': {
+          category: 'ui',
+          count: 0,
+        },
+        'SCREEN_VIEWED': {
+          category: 'navigation',
+          count: 0,
+        },
+      });
+    }
 
-    const loginOtpReceivedSubscription = Finvu.addLoginOtpReceivedListener((event) => {
-      console.log('Login OTP received event:', event);
-      // You can use this event to automatically fill in the OTP if it's delivered to the app
-    });
+    // Register event aliases (optional)
+    if (Finvu.registerAliases && Finvu.FinvuEventType) {
+      Finvu.registerAliases({
+        [Finvu.FinvuEventType.LOGIN_OTP_VERIFIED]: 'user_login_success',
+        [Finvu.FinvuEventType.CONSENT_APPROVED]: 'consent_granted',
+        [Finvu.FinvuEventType.LINKING_SUCCESS]: 'account_linked',
+      });
+    }
 
-    const loginOtpVerifiedSubscription = Finvu.addLoginOtpVerifiedListener((event) => {
-      console.log('Login OTP verified event:', event);
-      // Handle successful OTP verification
-    });
+    // Add unified event tracking listener (replaces individual listeners)
+    let eventTrackingSubscription: any = null;
+    if (Finvu.addEventListener) {
+      eventTrackingSubscription = Finvu.addEventListener((event: FinvuEvent) => {
+        console.log('📊 Event received:', event.eventName);
+        console.log('   Category:', event.eventCategory);
+        console.log('   Timestamp:', event.timestamp);
+        console.log('   Params:', event.params);
+
+        // Add to local state for display (keep last 50 events)
+        setEvents(prev => [event, ...prev].slice(0, 50));
+
+        // Handle specific events (includes connection status, OTP, etc.)
+        handleSpecificEvent(event);
+      });
+      console.log('✅ Unified event listener registered');
+    } else {
+      console.warn('⚠️ addEventListener not available in SDK');
+    }
 
     return () => {
-      // Clean up event listeners
-      connectionStatusSubscription.remove();
-      loginOtpReceivedSubscription.remove();
-      loginOtpVerifiedSubscription.remove();
+      // Clean up event listener
+      if (eventTrackingSubscription?.remove) {
+        eventTrackingSubscription.remove();
+      }
     };
   }, []);
+
+  const handleSpecificEvent = (event: FinvuEvent) => {
+    if (!Finvu.FinvuEventType) return;
+
+    switch (event.eventName) {
+      case Finvu.FinvuEventType.LOGIN_OTP_VERIFIED:
+        console.log('✅ User logged in successfully');
+        break;
+
+      case Finvu.FinvuEventType.CONSENT_APPROVED:
+        console.log('✅ Consent approved');
+        break;
+
+      case Finvu.FinvuEventType.LINKING_SUCCESS:
+        const accountCount = event.params.count as number;
+        console.log(`✅ ${accountCount} account(s) linked`);
+        break;
+
+      case Finvu.FinvuEventType.WEBSOCKET_CONNECTED:
+        console.log('🔌 WebSocket connected');
+        setIsConnected(true);
+        setStatusMessage('Connected successfully');
+        break;
+
+      case Finvu.FinvuEventType.WEBSOCKET_DISCONNECTED:
+        console.log('🔌 WebSocket disconnected');
+        setIsConnected(false);
+        setStatusMessage('Disconnected');
+        break;
+
+      case Finvu.FinvuEventType.SESSION_ERROR:
+        const error = event.params.error as string;
+        console.error('❌ Session error:', error);
+        break;
+
+      // Handle connection status changes
+      case 'CONNECTION_STATUS_CHANGED':
+      case 'connection_status_changed':
+        const status = event.params.status as string;
+        setStatusMessage(`Connection status: ${status}`);
+        setIsConnected(status === 'Connected successfully' || status === 'connected');
+        break;
+
+      // Handle OTP received
+      case 'LOGIN_OTP_RECEIVED':
+      case 'login_otp_received':
+        console.log('Login OTP received event:', event.params);
+        // You can use this event to automatically fill in the OTP if it's delivered to the app
+        break;
+    }
+  };
+
+  // Helper function to track custom events
+  const trackCustomEvent = (eventName: string, params?: Record<string, any>) => {
+    if (Finvu.track) {
+      Finvu.track(eventName, params || {});
+    }
+  };
 
   // Initialize SDK
   const handleInitPress = async () => {
     try {
       setIsLoading(true);
       setStatusMessage('Initializing...');
+      
+      // Ensure event tracking is enabled before initialization
+      if (Finvu.setEventsEnabled) {
+        const enableResult = Finvu.setEventsEnabled(true);
+        if (enableResult?.isSuccess) {
+          console.log('✅ Event tracking enabled (before init)');
+        }
+      }
+      
       const result = await Finvu.initializeWith(config);
 
       if (result.isSuccess) {
         setStatusMessage(`Initialized: ${result.data}`);
+        
+        // Re-enable event tracking after initialization to ensure it's active
+        if (Finvu.setEventsEnabled) {
+          const enableResult = Finvu.setEventsEnabled(true);
+          if (enableResult?.isSuccess) {
+            console.log('✅ Event tracking enabled (after init)');
+          }
+        }
       } else {
         setStatusMessage(`Init failed: ${result.error.message}`);
         Alert.alert('Initialization Error', result.error.message);
@@ -566,6 +679,11 @@ const Home = () => {
           </View>
         </>
       )}
+
+      <EventsDisplay 
+        events={events} 
+        onClear={() => setEvents([])} 
+      />
 
       <Text style={styles.note}>Check the console for detailed results</Text>
     </ScrollView>

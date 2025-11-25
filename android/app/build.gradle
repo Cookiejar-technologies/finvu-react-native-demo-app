@@ -151,7 +151,7 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     // uncomment this line if you want to use the SNA adapter for sna login
-    // implementation("com.finvu.android:sna-adapter:1.0.1")
+    implementation("com.finvu.android:sna-adapter:1.0.4")
 
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
