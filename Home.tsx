@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Button, TextInput, Text, Alert, ScrollView, ActivityIndicator, FlatList } from 'react-native';
-import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk-test';
 import { AccountLinking } from './src/utils/accountLinkingUtils';
 import { useFinvu } from './src/context/FinvuContext';
 import { styles } from './src/styles/sharedStyles';
 import { useNavigation } from '@react-navigation/native';
 import { HomePageNavigationProp, LinkedAccountsPageNavigationProp } from './src/types/navigation';
 import { ROUTES } from './src/constants/routes';
-import { EventsDisplay, FinvuEvent } from './src/components/EventsDisplay';
+import { EventsDisplay } from './src/components/EventsDisplay';
+import type { FinvuEvent } from '@cookiejar-technologies/finvu-react-native-sdk-test';
 
 const Home = () => {
 
@@ -22,6 +23,7 @@ const Home = () => {
   const [consentDetails, setConsentDetails] = useState<any>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<any[]>([]);
   const [events, setEvents] = useState<FinvuEvent[]>([]);
+  const [revokeConsentId, setRevokeConsentId] = useState('');
 
   const config: Finvu.FinvuConfig = {
     finvuEndpoint: 'wss://webvwdev.finvu.in/consentapiv2',
@@ -179,8 +181,18 @@ const Home = () => {
           }
         }
       } else {
-        setStatusMessage(`Init failed: ${result.error.message}`);
-        Alert.alert('Initialization Error', result.error.message);
+        const { code, message } = result.error;
+        console.error('Initialization failed:', { code, message });
+        setStatusMessage(`Init failed: ${message}`);
+        
+        // Handle SDK error codes
+        if (code === '9999') {
+          Alert.alert('Initialization Error', 'A generic error occurred during initialization.');
+        } else if (code === '8001') {
+          Alert.alert('Security Error', 'SSL pinning failed. Your connection may be insecure.');
+        } else {
+          Alert.alert('Initialization Error', message);
+        }
       }
     } catch (error) {
       console.error('Initialization error:', error);
@@ -205,8 +217,20 @@ const Home = () => {
         console.log('new method result', 'isConnnected : ', isConnectedResult, 'hasSession : ', hasSessionResult)
         setIsConnected(true);
       } else {
-        setStatusMessage(`Connection failed: ${result.error.message}`);
-        Alert.alert('Connection Error', result.error.message);
+        const { code, message } = result.error;
+        console.error('Connection failed:', { code, message });
+        setStatusMessage(`Connection failed: ${message}`);
+        
+        // Handle SDK error codes
+        if (code === '8000') {
+          Alert.alert('Session Disconnected', 'Session disconnected. Please try again.');
+        } else if (code === '8001') {
+          Alert.alert('Security Error', 'SSL pinning failed. Your connection may be insecure.');
+        } else if (code === '9999') {
+          Alert.alert('Connection Error', 'A generic error occurred during connection.');
+        } else {
+          Alert.alert('Connection Error', message);
+        }
       }
     } catch (error) {
       console.error('Connection error:', error);
@@ -231,8 +255,16 @@ const Home = () => {
         setStatusMessage('Disconnected successfully');
         setIsConnected(false);
       } else {
-        setStatusMessage(`Failed to Disconnect: ${result.error.message}`);
-        Alert.alert('`Failed to Disconnect', result.error.message);
+        const { code, message } = result.error;
+        console.error('Disconnect failed:', { code, message });
+        setStatusMessage(`Failed to Disconnect: ${message}`);
+        
+        // Handle SDK error codes
+        if (code === '8000') {
+          Alert.alert('Session Disconnected', 'Session already disconnected.');
+        } else {
+          Alert.alert('Disconnect Failed', message);
+        }
       }
     } catch (error) {
       console.error('Connection error:', error);
@@ -286,8 +318,20 @@ const Home = () => {
                 await fetchLinkedAccounts();
               }
             } else {
-              setStatusMessage(`SNA verification failed: ${verifyResult.error.message}`);
-              Alert.alert("SNA Verification Failed", verifyResult.error.message);
+              const { code, message } = verifyResult.error;
+              console.error('SNA verification failed:', { code, message });
+              setStatusMessage(`SNA verification failed: ${message}`);
+              
+              // Handle auth error codes
+              if (code === 'A005') {
+                Alert.alert("Invalid OTP", "The OTP you entered is incorrect.");
+              } else if (code === 'A006') {
+                Alert.alert("Invalid Reference", "OTP reference is invalid. Please request a new OTP.");
+              } else if (code === 'A004') {
+                Alert.alert("OTP Verification Failed", "Login OTP verification failed.");
+              } else {
+                Alert.alert("SNA Verification Failed", message);
+              }
             }
           } else {
             // Regular OTP mode
@@ -301,9 +345,21 @@ const Home = () => {
               if (retryResult.isSuccess && retryResult.data.reference) {
                 setOtpReference(retryResult.data.reference);
                 setStatusMessage(`Login retry successful. OTP sent. Reference: ${retryResult.data.reference}`);
-              } else {
-                setStatusMessage(`Login retry failed: ${retryResult?.error?.message || 'Unknown error'}`);
-                Alert.alert("Login Failed", retryResult.error?.message || 'Login retry failed');
+              } else if (!retryResult.isSuccess) {
+                const { code, message } = retryResult.error;
+                console.error('Login retry failed:', { code, message });
+                setStatusMessage(`Login retry failed: ${message}`);
+                
+                // Handle auth error codes
+                if (code === 'A001') {
+                  Alert.alert("Invalid Format", "Please check your username format.");
+                } else if (code === 'A003') {
+                  Alert.alert("OTP Failed", "Failed to send OTP. Please try again.");
+                } else if (code === 'F429') {
+                  Alert.alert("Too Many Attempts", "Please wait before requesting OTP again.");
+                } else {
+                  Alert.alert("Login Failed", message);
+                }
               }
             }
             console.log('OTP mode - showing OTP field');
@@ -326,14 +382,40 @@ const Home = () => {
             if (retryResult.isSuccess && retryResult.data.reference) {
               setOtpReference(retryResult.data.reference);
               setStatusMessage(`Login retry successful. OTP sent. Reference: ${retryResult.data.reference}`);
-            } else {
-              setStatusMessage(`Login retry failed: ${retryResult?.error?.message || 'Unknown error'}`);
-              Alert.alert("Login Failed", retryResult.error?.message || 'Login retry failed');
+            } else if (!retryResult.isSuccess) {
+              const { code, message } = retryResult.error;
+              console.error('Login retry failed:', { code, message });
+              setStatusMessage(`Login retry failed: ${message}`);
+              
+              // Handle auth error codes
+              if (code === 'A001') {
+                Alert.alert("Invalid Format", "Please check your username format.");
+              } else if (code === 'A003') {
+                Alert.alert("OTP Failed", "Failed to send OTP. Please try again.");
+              } else if (code === 'F429') {
+                Alert.alert("Too Many Attempts", "Please wait before requesting OTP again.");
+              } else {
+                Alert.alert("Login Failed", message);
+              }
             }
           }
         } else {
-          setStatusMessage(`Login failed: ${result.error.message}`);
-          Alert.alert("Login Failed", result.error.message);
+          const { code, message } = result.error;
+          console.error('Login failed:', { code, message });
+          setStatusMessage(`Login failed: ${message}`);
+          
+          // Handle auth error codes
+          if (code === 'A001') {
+            Alert.alert("Invalid Format", "Please check your username format.");
+          } else if (code === 'A003') {
+            Alert.alert("OTP Failed", "Failed to send OTP. Please try again.");
+          } else if (code === 'F429') {
+            Alert.alert("Too Many Attempts", "Please wait before requesting OTP again.");
+          } else if (code === '1002' || code === 'AUTH_LOGIN_FAILED') {
+            Alert.alert("Login Failed", "Authentication failed. Please try again.");
+          } else {
+            Alert.alert("Login Failed", message);
+          }
         }
       }
     } catch (error) {
@@ -381,8 +463,22 @@ const Home = () => {
           await fetchLinkedAccounts();
         }
       } else {
-        setStatusMessage(`OTP verification failed: ${result.error.message}`);
-        Alert.alert("OTP Verification Failed", result.error.message);
+        const { code, message } = result.error;
+        console.error('OTP verification failed:', { code, message });
+        setStatusMessage(`OTP verification failed: ${message}`);
+        
+        // Handle auth error codes
+        if (code === 'A005') {
+          Alert.alert("Invalid OTP", "The OTP you entered is incorrect.");
+        } else if (code === 'A006') {
+          Alert.alert("Invalid Reference", "OTP reference is invalid. Please request a new OTP.");
+        } else if (code === 'A004') {
+          Alert.alert("OTP Verification Failed", "Login OTP verification failed.");
+        } else if (code === 'A002') {
+          Alert.alert("Session Not Found", "User session not found. Please login again.");
+        } else {
+          Alert.alert("OTP Verification Failed", message);
+        }
       }
     } catch (error) {
       console.error('OTP verification error:', error);
@@ -406,8 +502,20 @@ const Home = () => {
         setStatusMessage(`Found ${accounts.length} linked accounts`);
         console.log("Linked Accounts:", accounts);
       } else {
-        setStatusMessage(`Fetch failed: ${result.error.message}`);
-        Alert.alert("Fetch Failed", result.error.message);
+        const { code, message } = result.error;
+        console.error('Fetch linked accounts failed:', { code, message });
+        setStatusMessage(`Fetch failed: ${message}`);
+        
+        // Handle discovery error codes
+        if (code === 'D010') {
+          Alert.alert('No Linked Accounts', 'No linked accounts found.');
+        } else if (code === 'F401') {
+          Alert.alert('Unauthorized', 'Please log in to fetch linked accounts.');
+        } else if (code === 'F404') {
+          Alert.alert('Not Found', 'Linked accounts not found.');
+        } else {
+          Alert.alert("Fetch Failed", message);
+        }
       }
     } catch (error) {
       console.error('Fetch linked accounts error:', error);
@@ -435,8 +543,22 @@ const Home = () => {
         setStatusMessage(`Consent details fetched successfully`);
         console.log("Consent Details:", result.data);
       } else {
-        setStatusMessage(`Fetch consent details failed: ${result.error.message}`);
-        Alert.alert("Fetch Consent Failed", result.error.message);
+        const { code, message } = result.error;
+        console.error('Fetch consent details failed:', { code, message });
+        setStatusMessage(`Fetch consent details failed: ${message}`);
+        
+        // Handle consent error codes
+        if (code === 'C001') {
+          Alert.alert("Consent Expired", "The consent has expired. Please create a new one.");
+        } else if (code === 'C003') {
+          Alert.alert("Record Not Found", "The consent record was not found.");
+        } else if (code === 'C009') {
+          Alert.alert("Consent Handle Not Found", "The consent handle was not found.");
+        } else if (code === 'C010') {
+          Alert.alert("Consent Handle Required", "Please provide a valid consent handle ID.");
+        } else {
+          Alert.alert("Fetch Consent Failed", message);
+        }
       }
     } catch (error) {
       console.error('Fetch consent details error:', error);
@@ -444,6 +566,38 @@ const Home = () => {
       Alert.alert('Fetch Consent Error', String(error));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Get consent handle status
+  const getConsentHandleStatus = async () => {
+    try {
+      console.log('Fetching consent handle status...');
+      const result = await Finvu.getConsentHandleStatus(consentHandleId);
+      
+      if (result.isSuccess) {
+        console.log('Consent handle status:', result.data);
+        setStatusMessage(`Consent handle status: ${result.data}`);
+      } else {
+        const { code, message } = result.error;
+        console.error('Get consent handle status failed:', { code, message });
+        setStatusMessage(`Get consent handle status failed: ${message}`);
+        
+        // Handle consent error codes
+        if (code === 'C009') {
+          Alert.alert("Consent Handle Not Found", "The consent handle was not found.");
+        } else if (code === 'C010') {
+          Alert.alert("Consent Handle Required", "Please provide a valid consent handle ID.");
+        } else if (code === 'F401') {
+          Alert.alert("Unauthorized", "Please log in to get consent handle status.");
+        } else {
+          // Don't show alert for getConsentHandleStatus as it's called automatically
+          console.log('Get consent handle status error:', message);
+        }
+      }
+    } catch (error) {
+      console.error('Get consent handle status error:', error);
+      setStatusMessage(`Get consent handle status failed: ${error}`);
     }
   };
 
@@ -466,19 +620,35 @@ const Home = () => {
         consentDetailToSend,
         accountsToSend
       );
-      console.log("Consent Approval result:", result);
+      console.log("Consent Approval result:", JSON.stringify(result, null, 2));
+      
       if (result.isSuccess) {
+        console.log("Consent Intent ID:", result.data.consentIntentId);
+        console.log("Consents Info:", JSON.stringify(result.data.consentsInfo, null, 2));
         setStatusMessage('Consent request approved successfully');
         Alert.alert("Success", "Consent request approved successfully");
       } else {
-        console.error("Consent approval failed:", result.error);
-        setStatusMessage(`Consent approval failed: ${result.error.message}`);
-        Alert.alert("Consent Approval Failed", result.error.message);
+        const { code, message } = result.error;
+        console.error("Consent approval failed:", { code, message });
+        setStatusMessage(`Consent approval failed: ${message}`);
+        
+        // Handle specific error codes
+        if (code === 'C001') {
+          Alert.alert("Consent Expired", "The consent has expired. Please create a new one.");
+        } else if (code === 'C002') {
+          Alert.alert("Consent Already Actioned", "This consent has already been processed.");
+        } else if (code === 'C009') {
+          Alert.alert("Consent Handle Not Found", "The consent handle was not found.");
+        } else {
+          Alert.alert("Consent Approval Failed", message);
+        }
       }
     } catch (error) {
       console.error("Error in handleApproveConsent:", error);
       setStatusMessage(`Consent approval failed: ${error}`);
       Alert.alert('Consent Approval Error', String(error));
+      // Call getConsentHandleStatus even on error
+      await getConsentHandleStatus();
     } finally {
       setTimeout(() => handleLogout(), 2000)
     }
@@ -497,20 +667,79 @@ const Home = () => {
 
       const result = await Finvu.denyConsentRequest(consentDetails.consentDetail);
 
+      // Call getConsentHandleStatus after deny (both success and failure)
+      await getConsentHandleStatus();
+
       if (result.isSuccess) {
         setStatusMessage('Consent request denied successfully');
         Alert.alert("Success", "Consent request denied successfully");
       } else {
-        setStatusMessage(`Consent denial failed: ${result.error.message}`);
-        Alert.alert("Consent Denial Failed", result.error.message);
+        const { code, message } = result.error;
+        console.error("Consent denial failed:", { code, message });
+        setStatusMessage(`Consent denial failed: ${message}`);
+        
+        // Handle specific error codes
+        if (code === 'C001') {
+          Alert.alert("Consent Expired", "The consent has expired. Please create a new one.");
+        } else if (code === 'C002') {
+          Alert.alert("Consent Already Actioned", "This consent has already been processed.");
+        } else if (code === 'C009') {
+          Alert.alert("Consent Handle Not Found", "The consent handle was not found.");
+        } else {
+          Alert.alert("Consent Denial Failed", message);
+        }
       }
     } catch (error) {
       console.error('Deny consent error:', error);
       setStatusMessage(`Consent denial failed: ${error}`);
       Alert.alert('Consent Denial Error', String(error));
+      // Call getConsentHandleStatus even on error
+      await getConsentHandleStatus();
     } finally {
       setIsLoading(false);
       setTimeout(() => handleLogout(), 2000)
+    }
+  };
+
+  // Revoke consent request
+  const handleRevokeConsent = async () => {
+    if (!revokeConsentId) {
+      Alert.alert("Missing Consent ID", "Please enter a consent ID to revoke");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setStatusMessage('Revoking consent...');
+
+      const result = await Finvu.revokeConsent(revokeConsentId);
+
+      if (result.isSuccess) {
+        setStatusMessage('Consent revoked successfully');
+        Alert.alert("Success", "Consent revoked successfully");
+        setRevokeConsentId(''); // Clear input after success
+      } else {
+        const { code, message } = result.error;
+        console.error("Consent revocation failed:", { code, message });
+        setStatusMessage(`Consent revocation failed: ${message}`);
+        
+        // Handle specific error codes
+        if (code === 'C001') {
+          Alert.alert("Consent Expired", "The consent has expired.");
+        } else if (code === 'C009') {
+          Alert.alert("Consent Not Found", "The consent was not found.");
+        } else if (code === 'C010') {
+          Alert.alert("Consent ID Required", "Please provide a valid consent ID.");
+        } else {
+          Alert.alert("Consent Revocation Failed", message);
+        }
+      }
+    } catch (error) {
+      console.error('Revoke consent error:', error);
+      setStatusMessage(`Consent revocation failed: ${error}`);
+      Alert.alert('Consent Revocation Error', String(error));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -530,8 +759,18 @@ const Home = () => {
         setConsentDetails(null);
         setStatusMessage('Logged out successfully');
       } else {
-        setStatusMessage(`Logout failed: ${result.error.message}`);
-        Alert.alert("Logout Failed", result.error.message);
+        const { code, message } = result.error;
+        console.error('Logout failed:', { code, message });
+        setStatusMessage(`Logout failed: ${message}`);
+        
+        // Handle logout error codes
+        if (code === '9000') {
+          Alert.alert("Logout", "User logged out.");
+        } else if (code === 'A002') {
+          Alert.alert("Session Not Found", "User session not found.");
+        } else {
+          Alert.alert("Logout Failed", message);
+        }
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -676,6 +915,22 @@ const Home = () => {
                 </View>
               </>
             )}
+
+            <View style={styles.buttonMargin} />
+            <Text style={styles.sectionTitle}>Revoke Consent</Text>
+            <TextInput
+              style={styles.input}
+              value={revokeConsentId}
+              onChangeText={setRevokeConsentId}
+              placeholder="Enter Consent ID to Revoke"
+              editable={!isLoading}
+            />
+            <Button
+              title="Revoke Consent"
+              onPress={handleRevokeConsent}
+              disabled={!revokeConsentId || isLoading}
+              color="#FF9800"
+            />
           </View>
         </>
       )}

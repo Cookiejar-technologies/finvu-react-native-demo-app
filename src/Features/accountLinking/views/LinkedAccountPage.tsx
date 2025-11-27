@@ -1,8 +1,8 @@
-import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk-test';
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, ActivityIndicator, Alert, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { LinkedAccountDetails } from '@cookiejar-technologies/finvu-react-native-sdk';
+import { LinkedAccountDetails } from '@cookiejar-technologies/finvu-react-native-sdk-test';
 import { ROUTES } from '../../../constants/routes';
 import { LinkedAccountsPageNavigationProp } from '../../../types/navigation';
 import { styles } from '../../../styles/sharedStyles';
@@ -30,8 +30,20 @@ const LinkedAccountsPage = () => {
                 setStatusMessage(`Found ${accounts.length} linked accounts`);
                 console.log('Linked Accounts:', accounts);
             } else {
-                setStatusMessage(`Fetch failed: ${result.error.message}`);
-                Alert.alert('Fetch Failed', result.error.message);
+                const { code, message } = result.error;
+                console.error('Fetch linked accounts failed:', { code, message });
+                setStatusMessage(`Fetch failed: ${message}`);
+                
+                // Handle specific error codes
+                if (code === 'D010') {
+                    Alert.alert('No Linked Accounts', 'No linked accounts found.');
+                } else if (code === 'F401') {
+                    Alert.alert('Unauthorized', 'Please log in to fetch linked accounts.');
+                } else if (code === 'F404') {
+                    Alert.alert('Not Found', 'Linked accounts not found.');
+                } else {
+                    Alert.alert('Fetch Failed', message);
+                }
             }
         } catch (error) {
             console.error('Fetch linked accounts error:', error);

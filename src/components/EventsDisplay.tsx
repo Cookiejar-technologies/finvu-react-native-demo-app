@@ -1,12 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-
-export interface FinvuEvent {
-  eventName: string;
-  eventCategory: string;
-  timestamp: number;
-  params: Record<string, any>;
-}
+import type { FinvuEvent } from '@cookiejar-technologies/finvu-react-native-sdk-test';
 
 interface EventsDisplayProps {
   events: FinvuEvent[];
@@ -33,7 +27,7 @@ export const EventsDisplay: React.FC<EventsDisplayProps> = ({ events, onClear })
               <Text style={styles.eventName}>{event.eventName}</Text>
               <Text style={styles.eventCategory}>{event.eventCategory}</Text>
               <Text style={styles.eventTime}>
-                {new Date(event.timestamp).toLocaleTimeString()}
+                {new Date(event.timestamp).toLocaleTimeString() || event.timestamp}
               </Text>
               {Object.keys(event.params).length > 0 && (
                 <Text style={styles.eventParams}>

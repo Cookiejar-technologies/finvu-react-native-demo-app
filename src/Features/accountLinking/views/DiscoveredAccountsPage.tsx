@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk-test';
 import { View, Text, FlatList, TouchableOpacity, Button, Alert } from 'react-native';
 import { styles } from '../../../styles/sharedStyles';
 import { CommonActions, RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -60,7 +60,18 @@ const DiscoveredAccountsPage: React.FC = () => {
 
             const fipDetailsResult = await Finvu.fetchFipDetails(fipId);
             if (!fipDetailsResult.isSuccess) {
-                Alert.alert("FIP Fetch Failed", fipDetailsResult.error.message);
+                const { code, message } = fipDetailsResult.error;
+                console.error('FIP Fetch failed:', { code, message });
+                setStatusMessage(`FIP Fetch failed: ${message}`);
+                
+                // Handle FIP details error codes
+                if (code === 'F404') {
+                    Alert.alert("FIP Not Found", "The financial institution details were not found.");
+                } else if (code === 'F406') {
+                    Alert.alert("Invalid FIP", "The financial institution is invalid.");
+                } else {
+                    Alert.alert("FIP Fetch Failed", message);
+                }
                 return;
             }
 
@@ -68,7 +79,22 @@ const DiscoveredAccountsPage: React.FC = () => {
             const linkingResult = await Finvu.linkAccounts(accountsToLink, fipDetailsResult.data);
 
             if (!linkingResult.isSuccess) {
-                Alert.alert("Linking Failed", linkingResult.error.message);
+                const { code, message } = linkingResult.error;
+                console.error('Linking failed:', { code, message });
+                setStatusMessage(`Linking failed: ${message}`);
+                
+                // Handle linking error codes
+                if (code === 'D009') {
+                    Alert.alert("Already Linked", "One or more accounts are already linked.");
+                } else if (code === 'D007') {
+                    Alert.alert("Invalid FIP", "The financial institution is invalid.");
+                } else if (code === 'D008') {
+                    Alert.alert("FIP Operation Failed", "The financial institution operation failed.");
+                } else if (code === 'D003') {
+                    Alert.alert("Authentication Required", "Device authentication is required.");
+                } else {
+                    Alert.alert("Linking Failed", message);
+                }
                 return;
             }
 
@@ -81,6 +107,7 @@ const DiscoveredAccountsPage: React.FC = () => {
             }
         } catch (error) {
             console.error('Link accounts error:', error);
+            setStatusMessage(`Linking failed: ${error}`);
             Alert.alert('Linking Error', String(error));
         } finally {
             setIsLoading(false);
@@ -106,8 +133,22 @@ const DiscoveredAccountsPage: React.FC = () => {
                 setLinkingReference('');
                 navigation.goBack();
             } else {
-                setStatusMessage(`Linking confirmation failed: ${result.error.message}`);
-                Alert.alert("Linking Confirmation Failed", result.error.message);
+                const { code, message } = result.error;
+                console.error('Linking confirmation failed:', { code, message });
+                setStatusMessage(`Linking confirmation failed: ${message}`);
+                
+                // Handle confirmation error codes
+                if (code === 'A005') {
+                    Alert.alert("Invalid OTP", "The OTP you entered is incorrect. Please try again.");
+                } else if (code === 'A006') {
+                    Alert.alert("Invalid Reference", "The linking reference is invalid. Please start over.");
+                } else if (code === 'D009') {
+                    Alert.alert("Already Linked", "This account is already linked.");
+                } else if (code === 'D008') {
+                    Alert.alert("FIP Operation Failed", "The financial institution operation failed.");
+                } else {
+                    Alert.alert("Linking Confirmation Failed", message);
+                }
             }
         } catch (error) {
             console.error('Confirm account linking error:', error);
