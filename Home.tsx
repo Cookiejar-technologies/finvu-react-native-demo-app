@@ -316,6 +316,9 @@ const Home = () => {
 
                 // Also fetch linked accounts
                 await fetchLinkedAccounts();
+
+                // Call getConsentHandleStatus once after login
+                await getConsentHandleStatus();
               }
             } else {
               const { code, message } = verifyResult.error;
@@ -461,6 +464,9 @@ const Home = () => {
 
           // Also fetch linked accounts
           await fetchLinkedAccounts();
+
+          // Call getConsentHandleStatus once after login
+          await getConsentHandleStatus();
         }
       } else {
         const { code, message } = result.error;
@@ -621,6 +627,9 @@ const Home = () => {
         accountsToSend
       );
       console.log("Consent Approval result:", JSON.stringify(result, null, 2));
+      
+      // Call getConsentHandleStatus after approve (both success and failure)
+      await getConsentHandleStatus();
       
       if (result.isSuccess) {
         console.log("Consent Intent ID:", result.data.consentIntentId);
