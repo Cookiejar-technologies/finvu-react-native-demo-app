@@ -1,4 +1,4 @@
-import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk-test';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
@@ -83,9 +83,24 @@ const DiscoverAccountsPage = () => {
                     Alert.alert('FIPs Available', `Found ${fips.length}. Examples: ${sample}...`);
                 }
             } else {
-                Alert.alert('Fetch FIPs Failed', result.error.message);
+                const { code, message } = result.error;
+                console.error('Fetch FIPs failed:', { code, message });
+                setStatusMessage(`Fetch FIPs failed: ${message}`);
+                
+                // Handle specific error codes
+                if (code === 'F404') {
+                    Alert.alert('Not Found', 'FIPs list not found.');
+                } else if (code === 'F401') {
+                    Alert.alert('Unauthorized', 'Please log in to fetch FIPs.');
+                } else if (code === 'F500') {
+                    Alert.alert('Server Error', 'Internal server error. Please try again later.');
+                } else {
+                    Alert.alert('Fetch FIPs Failed', message);
+                }
             }
         } catch (error) {
+            console.error('Fetch FIPs error:', error);
+            setStatusMessage(`Fetch FIPs failed: ${error}`);
             Alert.alert('Fetch Error', String(error));
         } finally {
             setIsLoading(false);
@@ -154,12 +169,44 @@ const DiscoverAccountsPage = () => {
                         Alert.alert("No Accounts", "No accounts discovered with provided identifiers.");
                     }
                 } else {
-                    Alert.alert("Discovery Failed", result.error.message);
+                    const { code, message } = result.error;
+                    console.error('Discovery failed:', { code, message });
+                    setStatusMessage(`Discovery failed: ${message}`);
+                    
+                    // Handle discovery error codes
+                    if (code === 'D007') {
+                        Alert.alert("Invalid FIP", "The selected financial institution is invalid.");
+                    } else if (code === 'D008') {
+                        Alert.alert("FIP Operation Failed", "The financial institution operation failed.");
+                    } else if (code === 'D003') {
+                        Alert.alert("Authentication Required", "Device authentication is required.");
+                    } else if (code === 'D004') {
+                        Alert.alert("Email Not Authenticated", "Email authentication is required.");
+                    } else if (code === 'D005') {
+                        Alert.alert("Aadhar Not Authenticated", "Aadhar authentication is required.");
+                    } else if (code === 'D006') {
+                        Alert.alert("Authenticator Required", "An authenticator is required for this operation.");
+                    } else {
+                        Alert.alert("Discovery Failed", message);
+                    }
                 }
             } else {
-                Alert.alert("FIP Details Error", fipDetailsResult.error.message);
+                const { code, message } = fipDetailsResult.error;
+                console.error('FIP Details error:', { code, message });
+                setStatusMessage(`FIP Details error: ${message}`);
+                
+                // Handle FIP details error codes
+                if (code === 'F404') {
+                    Alert.alert("FIP Not Found", "The financial institution details were not found.");
+                } else if (code === 'F406') {
+                    Alert.alert("Invalid FIP", "The financial institution is invalid.");
+                } else {
+                    Alert.alert("FIP Details Error", message);
+                }
             }
         } catch (error) {
+            console.error('Discovery error:', error);
+            setStatusMessage(`Discovery failed: ${error}`);
             Alert.alert("Discovery Error", String(error));
         } finally {
             setIsLoading(false);

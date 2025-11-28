@@ -1,11 +1,10 @@
-import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
-import { FipDetails } from "finvu";
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk-test';
 import { Identifier, InputDialogResolver } from "../types/accountLinkingTypes";
 import { Alert } from 'react-native';
 
 export class AccountLinking {
     static getRequiredFinvuTypeIdentifierInfoList(
-        fipDetails: FipDetails | null | undefined
+        fipDetails: Finvu.FipDetails | null | undefined
     ): Identifier[] {
         if (!fipDetails?.typeIdentifiers) return [];
 
