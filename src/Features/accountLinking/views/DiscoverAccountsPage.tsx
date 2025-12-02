@@ -1,4 +1,4 @@
-import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk-test';
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     View,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk-test';
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
 import { View, Text, FlatList, TouchableOpacity, Button, Alert } from 'react-native';
 import { styles } from '../../../styles/sharedStyles';
 import { CommonActions, RouteProp, useNavigation, useRoute } from '@react-navigation/native';

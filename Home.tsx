@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Button, TextInput, Text, Alert, ScrollView, ActivityIndicator, FlatList } from 'react-native';
-import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk-test';
+import * as Finvu from '@cookiejar-technologies/finvu-react-native-sdk';
 import { AccountLinking } from './src/utils/accountLinkingUtils';
 import { useFinvu } from './src/context/FinvuContext';
 import { styles } from './src/styles/sharedStyles';
@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { HomePageNavigationProp, LinkedAccountsPageNavigationProp } from './src/types/navigation';
 import { ROUTES } from './src/constants/routes';
 import { EventsDisplay } from './src/components/EventsDisplay';
-import type { FinvuEvent } from '@cookiejar-technologies/finvu-react-native-sdk-test';
+import type { FinvuEvent } from '@cookiejar-technologies/finvu-react-native-sdk';
 
 const Home = () => {
 
