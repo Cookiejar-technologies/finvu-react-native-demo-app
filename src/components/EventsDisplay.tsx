@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import type { FinvuEvent } from '@cookiejar-technologies/finvu-react-native-sdk-test';
+import type { FinvuEvent } from '@cookiejar-technologies/finvu-react-native-sdk';
 
 interface EventsDisplayProps {
   events: FinvuEvent[];
